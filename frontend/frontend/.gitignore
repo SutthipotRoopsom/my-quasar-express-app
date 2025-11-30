@@ -1,0 +1,32 @@
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+
+
+# Quasar specific
+.quasar/
+dist/
+.tmp/
+
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+
+# Logs
+logs/
+*.log
+
+
+# Docker
+.dockerignore
