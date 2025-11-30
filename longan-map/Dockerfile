@@ -1,35 +1,10 @@
-# Stage 1: Build Quasar SPA
-FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copy ทุกอย่างเลย (ยกเว้นที่ระบุใน .dockerignore)
-COPY . .
-
-# Install dependencies
-RUN npm ci --legacy-peer-deps
-
-# Build Quasar (สำหรับ SPA)
-RUN npm run build
-
-# Stage 2: Production (Nginx serve static files)
+# ใช้ Nginx สำหรับ serve static HTML
 FROM nginx:1.27-alpine
 
-# Copy build artifacts จาก stage 1
-COPY --from=builder /app/dist/spa /usr/share/nginx/html
+# Copy ไฟล์ HTML ไปยัง Nginx web root
+COPY longan_map.html /usr/share/nginx/html/index.html
 
-# Create custom Nginx config inline สำหรับ SPA routing
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-# Expose port
+# Expose port 80
 EXPOSE 80
 
 # Run Nginx

@@ -1,7 +1,5 @@
-version: '3.9'
-
-
 services:
+  # Quasar Frontend
   frontend:
     build:
       context: ./frontend
@@ -9,3 +7,14 @@ services:
     ports:
       - "8080:80"
     restart: unless-stopped
+    container_name: quasar-frontend
+
+  # Longan Map
+  longan-map:
+    build:
+      context: ./longan-map
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    container_name: longan-map-app
