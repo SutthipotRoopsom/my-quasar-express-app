@@ -1,36 +1,33 @@
-# Stage 1: Build Quasar SPA
+# Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy ทุกอย่างเลย (ยกเว้นที่ระบุใน .dockerignore)
+# ✅ รับ API URL จาก docker-compose args
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+# Copy package files
+COPY package*.json ./
+
+# ✅ Copy source code ก่อน npm install (เพื่อให้ quasar prepare ทำงานได้)
 COPY . .
 
-# Install dependencies
-RUN npm ci --legacy-peer-deps
+# Install dependencies (ตอนนี้ quasar prepare จะทำงานได้แล้ว)
+RUN npm install
 
-# Build Quasar (สำหรับ SPA)
+# Build (VITE_API_URL จะถูก embed เข้าไป)
 RUN npm run build
 
-# Stage 2: Production (Nginx serve static files)
-FROM nginx:1.27-alpine
+# Stage 2: Production
+FROM nginx:alpine
 
-# Copy build artifacts จาก stage 1
+# Copy built files
 COPY --from=builder /app/dist/spa /usr/share/nginx/html
 
-# Create custom Nginx config inline สำหรับ SPA routing
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
+# Copy nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose port
 EXPOSE 80
 
-# Run Nginx
 CMD ["nginx", "-g", "daemon off;"]
