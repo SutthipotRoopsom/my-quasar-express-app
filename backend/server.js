@@ -7,30 +7,51 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware - แก้ CORS ให้รองรับทุก origin
+// Middleware
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
+
 app.use(express.json());
 
-// สร้างโฟลเดอร์ logs ถ้ายังไม่มี
-const logsDir = path.join(__dirname, 'logs');
+// Serve static files (สำหรับ favicon)
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Content-Security-Policy (ปรับให้เหมาะสมและปลอดภัย)
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; " +
+    "script-src 'self' 'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU='; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: https:; " +
+    "font-src 'self' data:; " +
+    "connect-src 'self' https:; " +
+    "object-src 'none'; " +
+    "base-uri 'self'; " +
+    "form-action 'self';"
+  );
+  next();
+});
+
+// สร้างโฟลเดอร์ logs
+const logsDir = path.join(__dirname, '../logs');
 if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
+  fs.mkdirSync(logsDir, { recursive: true });
 }
 
-// Health check endpoint (สำหรับ Docker healthcheck)
+// Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-// Endpoint demo: Return Git + Docker info + Student Info
+// API Demo
 app.get('/api/demo', (req, res) => {
   console.log('📡 API /api/demo called');
-  
-  const logMessage = `Request at ${new Date().toISOString()}: ${req.ip}\n`;
+
+  const logMessage = `Request at ${new Date().toISOString()}: ${req.ip || req.socket.remoteAddress}\n`;
   fs.appendFileSync(path.join(logsDir, 'access.log'), logMessage);
 
   const responseData = {
@@ -49,9 +70,16 @@ app.get('/api/demo', (req, res) => {
       detail: 'ใช้ multi-stage build, healthcheck ใน Dockerfile, และ orchestration ด้วย Compose/Swarm'
     }
   };
-  
-  console.log('✅ Sending response:', responseData);
+
   res.json(responseData);
+});
+
+// Root endpoint
+app.get('/', (_req, res) => {
+  res.json({
+    message: 'API พร้อมใช้งาน (Supabase + Prisma + Quasar Frontend)',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Error handling

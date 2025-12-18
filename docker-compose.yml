@@ -7,6 +7,7 @@ services:
       args:
         # ✅ สำคัญมาก! ต้องส่ง API URL ตอน build
         - VITE_API_URL=http://localhost:3000
+    image: stawan15/my-quasar-express-app-frontend:latest
     ports:
       - "8080:80"
     depends_on:
@@ -21,6 +22,7 @@ services:
     build:
       context: ./longan-map
       dockerfile: Dockerfile
+    image: stawan15/my-quasar-express-app-longan-map:latest 
     ports:
       - "8081:80"
     restart: unless-stopped
@@ -33,10 +35,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: stawan15/my-quasar-express-app-backend:latest
     ports:
       - "3000:3000"
-    environment:
-      - PORT=3000
+    env_file:
+      - ./backend/.env # ใช้ไฟล์ .env สำหรับตั้งค่า environment variables  
     volumes:
       - ./backend/logs:/app/logs
     networks:
@@ -44,7 +47,7 @@ services:
     restart: unless-stopped
     container_name: express-backend
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      test: ["CMD","node", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

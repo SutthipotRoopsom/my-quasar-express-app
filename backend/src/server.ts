@@ -12,10 +12,25 @@ import taskRoutes from './routes/task.routes';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT: number = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 
 app.use(cors());
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(), // ดึงค่า default ปลอดภัยอื่นๆ มาด้วย
+        "script-src": [
+          "'self'", 
+          "'sha256-ieoeWczDHkReVBsRBqaal5AFMlBtNjMzgwKvLqi/tSU='" // ใส่ Hash ตรงนี้
+        ],
+        "connect-src": ["'self'", "*"], // อนุญาตให้เชื่อมต่อ API ได้ยืดหยุ่นขึ้น
+      },
+    },
+  })
+);
+// ---------------------------------------------------------
+
 app.use(morgan('dev'));
 app.use(express.json());
 
@@ -52,6 +67,11 @@ app.get('/', (_req, res) => {
   });
 });
 
+// Health check endpoint (สำหรับ Docker healthcheck)
+app.get('/health', (_req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
 // Task API (Lab 2.1)
 app.use('/api/tasks', taskRoutes);
 
@@ -63,6 +83,14 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
+// Error handling
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error('❌ Error:', err && err.stack ? err.stack : err);
+  res.status(500).json({ error: 'Something broke!' });
+});
+
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`📊 API available at http://localhost:${PORT}/api/demo`);
+  console.log(`💚 Health check at http://localhost:${PORT}/health`);
 });
